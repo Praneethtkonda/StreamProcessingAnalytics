@@ -1,6 +1,16 @@
 ---
 version: '2'
 services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    hostname: mosquitto
+    container_name: mosquitto
+    expose:
+      - "1883"
+    volumes:
+      - "./mosquitto:/mosquitto/"
+    ports:
+      - "1883:1883"
   zookeeper:
     image: confluentinc/cp-zookeeper:6.2.0
     container_name: zookeeper
@@ -16,7 +26,6 @@ services:
     links:
       - zookeeper
     ports:
-    # "`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-
     # An important note about accessing Kafka from clients on other machines: 
     # -----------------------------------------------------------------------
     #
@@ -31,9 +40,8 @@ services:
     # and components, use kafka:29092.
     #
     # See https://rmoff.net/2018/08/02/kafka-listeners-explained/ for details
-    # "`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-
     #
-      - 9092:9092
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -117,7 +125,7 @@ services:
         echo '127.0.0.1 kafka-connect-01' >> /etc/hosts
         #
         echo "Installing connector plugins"
-        confluent-hub install --no-prompt confluentinc/kafka-connect-datagen:0.5.0
+        # confluent-hub install --no-prompt confluentinc/kafka-connect-datagen:0.5.0
         confluent-hub install --no-prompt confluentinc/kafka-connect-mqtt:latest
         #
         echo "Launching Kafka Connect worker"
@@ -133,16 +141,16 @@ services:
           sleep 5 
         done
 
-        echo -e "\n--\n+> Creating Data Generator source"
-        curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/source-datagen-01/config \
-            -d '{
-            "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-            "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-            "kafka.topic": "ratings",
-            "max.interval":750,
-            "quickstart": "ratings",
-            "tasks.max": 1
-        }'
+        # echo -e "\n--\n+> Creating Data Generator source"
+        # curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/source-datagen-01/config \
+        #     -d '{
+        #     "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
+        #     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        #     "kafka.topic": "ratings",
+        #     "max.interval":750,
+        #     "quickstart": "ratings",
+        #     "tasks.max": 1
+        # }'
         sleep infinity
 
   ksqldb:

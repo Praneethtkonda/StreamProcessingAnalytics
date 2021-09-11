@@ -1,0 +1,13 @@
+{
+    "name": "source-mqtt",
+    "config": {
+        "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
+        "tasks.max": "1",
+        "mqtt.server.uri": "tcp://127.0.0.1:1883",
+        "mqtt.topics":"house/bulbs/bulb1",
+        "kafka.topic":"spa_mqtt_topic",
+        "mqtt.qos": "2",
+        "confluent.topic.bootstrap.servers": "kafka:29092",
+        "confluent.topic.replication.factor": "1"
+    }
+}

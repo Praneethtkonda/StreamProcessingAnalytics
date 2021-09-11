@@ -55,3 +55,4 @@ Refer to these links on how to play with kafka connect
 - Connector => https://docs.confluent.io/kafka-connect-mqtt/current/mqtt-sink-connector/index.html
 - KSQL => https://ksqldb.io/quickstart.html?_ga=2.147083639.1372971405.1629279822-621626216.1629279822
 - MQTT to Kafka => https://github.com/SINTEF-9012/kafka-mqtt-source-connector
+- https://docs.confluent.io/kafka-connect-mqtt/current/mqtt-source-connector/mqtt_source_connector_quickstart.html
