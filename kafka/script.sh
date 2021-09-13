@@ -2,9 +2,10 @@ curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connect
             -d '{
             "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
             "tasks.max": "1",
-            "mqtt.server.uri": "tcp://127.0.0.1:1883",
+            "mqtt.server.uri": "tcp://mosquitto:1883",
             "mqtt.topics":"spa_mqtt_topic",
-            "kafka.topic":"ratings",
+            "kafka.topic":"truck_details",
+            "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
             "mqtt.qos": "2",
             "confluent.topic.bootstrap.servers": "kafka:29092",
             "confluent.topic.replication.factor": "1"
