@@ -8,40 +8,31 @@ Prepare a working prototype of this IVMS using open source messaging platform Ap
 6)	Providing a mechanism to flag out the details of drivers exceeding the speed limits
 7)	Providing a way to maintain the count of over speeding incidents over the period of time, on particular routes, for particular trucks etc.
 
-## Bringing up your mosquitto container
-For windows
-```bash
-# Bring up your mosquitto container
-PS Y:\git\spa> docker run -it --name mosquitto -p 1883:1883 -p 9001:9001 -v $pwd/mosquitto:/mosquitto/ eclipse-mosquitto
+## Our Architecture
+![`Architecture`](Kafka.drawio.png)
+Refer to the [recorded video](https://drive.google.com/file/d/1zyNgvYWL44D9qsNQY0Zb8VdanB0iLWO1/view?usp=sharing) for more clarification on the architecture.
 
-```
-For Linux
-```bash
-# Bring up your mosquitto container
-root@user/spa/$ docker run -it --name mosquitto -p 1883:1883 -p 9001:9001 -v $(pwd)/mosquitto:/mosquitto/ eclipse-mosquitto
-
-```
 ## Running your mosquitto client
 For windows
 ```
 PS Y:\git\spa> py -m venv env
 PS Y:\git\spa> .\env\Scripts\activate
 (env) PS Y:\git\spa> pip install -r requirements.txt
-(env) PS Y:\git\spa> python demo_client.py
+(env) PS Y:\git\spa> python mqtt_client_data_gen.py
 ```
 For Linux
 ```bash
 root@user$ python3 -m venv env
 root@user$ source env/bin/activate
 (env) root@user/spa/$ pip install -r requirements.txt
-(env) root@user/spa/$ python demo_client.py
+(env) root@user/spa/$ python mqtt_client_data_gen.py
 ```
 
-## Testing the mosquitto-kafka-ksql connectors
-Still in experimental phase.
+## Running the development environment
+Bring up the set of containers will bring up the whole pipeline for stream processing and analytics.
+
 ```
-PS Y:\git\spa\> cd kafka
-PS Y:\git\spa\kafka> docker-compose up
+PS Y:\git\spa> docker-compose up
 n confluent_rmoff_01ksql_processing_log-0 in response to UpdateMetadata request sent by controller 1 epoch 1 with correlation id 4 (state.change.logger)
 kafka             | [2021-08-18 12:20:01,840] INFO [Broker id=1] Add 1 partitions and deleted 0 partitions from metadata cache in response to UpdateMetadata request sent by controller 1 epoch 1 with correlation id 4 (state.change.logger)
 kafka             | [2021-08-18 12:20:01,841] TRACE [Controller id=1 epoch=1] Received response UpdateMetadataResponseData(errorCode=0) for request UPDATE_METADATA with correlation id 4 sent to broker kafka:29092 (id: 1 rack: null) (state.change.logger)
@@ -51,7 +42,43 @@ ksqldb            | [2021-08-18 12:20:01,878] INFO Restarting 0 queries. (io.con
 ksqldb            | [2021-08-18 12:20:01,880] INFO Restore complete (io.confluent.ksql.rest.server.computation.CommandRunner:291)
 ksqldb            | [2021-08-18 12:20:01,883] INFO Re
 ```
-Refer to these links on how to play with kafka connect
+
+## Configuring your confluent connectors
+These curl commands are taken from [script.sh](script.sh). Refer this file for more clarity.
+#### Mqtt-kafka Connector
+
+```bash
+curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/source-mqtt/config \
+            -d '{
+            "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
+            "tasks.max": "1",
+            "mqtt.server.uri": "tcp://mosquitto:1883",
+            "mqtt.topics":"truck_details_mqtt",
+            "kafka.topic":"truck_details_kafka",
+            "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+            "mqtt.qos": "2",
+            "confluent.topic.bootstrap.servers": "kafka:29092",
+            "confluent.topic.replication.factor": "1"
+        }'
+```
+#### Kafka-ElasticSearch Connectors
+```bash
+curl -s -X POST http://localhost:8083/connectors -H "Content-Type: application/json" -d '{
+ "name": "elasticsearch-connector",
+ "config": {
+   "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+   "connection.url": "http://elasticsearch:9200",
+   "tasks.max": "1",
+   "topics": "truck_details_kafka",
+   "type.name": "_doc",
+   "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+   "value.converter.schemas.enable": "false",
+   "schema.ignore": "true",
+   "key.ignore": "true"
+ }
+}'
+```
+External References
 - Connector => https://docs.confluent.io/kafka-connect-mqtt/current/mqtt-sink-connector/index.html
 - KSQL => https://ksqldb.io/quickstart.html?_ga=2.147083639.1372971405.1629279822-621626216.1629279822
 - MQTT to Kafka => https://github.com/SINTEF-9012/kafka-mqtt-source-connector

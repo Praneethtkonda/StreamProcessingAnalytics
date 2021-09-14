@@ -12,6 +12,7 @@ services:
       - "1883:1883"
     volumes:
       - "./mosquitto:/mosquitto/"
+
   zookeeper:
     image: confluentinc/cp-zookeeper:6.2.0
     container_name: zookeeper
@@ -27,7 +28,6 @@ services:
     links:
       - zookeeper
     ports:
-    # "`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-
     # An important note about accessing Kafka from clients on other machines: 
     # -----------------------------------------------------------------------
     #
@@ -40,10 +40,6 @@ services:
     #
     # For connections _internal_ to the docker network, such as from other services
     # and components, use kafka:29092.
-    #
-    # See https://rmoff.net/2018/08/02/kafka-listeners-explained/ for details
-    # "`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-
-    #
       - 9092:9092
     environment:
       KAFKA_BROKER_ID: 1
@@ -65,7 +61,8 @@ services:
       - |
         echo '127.0.0.1 kafka' >> /etc/hosts
         /etc/confluent/docker/run
-        sleep infinity  
+        sleep infinity
+
   schema-registry:
     image: confluentinc/cp-schema-registry:6.2.0
     container_name: schema-registry
@@ -102,7 +99,6 @@ services:
       CONNECT_OFFSET_STORAGE_TOPIC: _kafka-connect-offsets
       CONNECT_STATUS_STORAGE_TOPIC: _kafka-connect-status
       CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      # CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
@@ -129,8 +125,8 @@ services:
         echo '127.0.0.1 kafka-connect' >> /etc/hosts
         #
         echo "Installing connector plugins"
-        # confluent-hub install --no-prompt confluentinc/kafka-connect-datagen:0.5.0
         confluent-hub install --no-prompt confluentinc/kafka-connect-mqtt:1.2.3
+        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:5.4.0
         #
         echo "Launching Kafka Connect worker"
         /etc/confluent/docker/run & 
@@ -142,19 +138,10 @@ services:
           if [ $$curl_status -eq 200 ] ; then
             break
           fi
-          sleep 5 
+          sleep 5
         done
-        # echo -e "\n--\n+> Creating Data Generator source"
-        # curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/source-datagen-01/config \
-        #     -d '{
-        #     "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-        #     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-        #     "kafka.topic": "ratings",
-        #     "max.interval":750,
-        #     "quickstart": "ratings",
-        #     "tasks.max": 1
-        # }'
         sleep infinity
+
   ksqldb:
     image: confluentinc/ksqldb-server:0.18.0
     hostname: ksqldb
@@ -186,3 +173,30 @@ services:
       - ksqldb
     entrypoint: /bin/sh
     tty: true
+  
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.0
+    container_name: elasticsearch
+    #restart: always
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      discovery.type: "single-node"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:7.10.0
+    container_name: kibana
+    restart: always
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+    environment:
+      NEWSFEED_ENABLED: 'false'
+      TELEMETRY_OPTIN: 'false'
+      TELEMETRY_ENABLED: 'false'
+      SERVER_MAXPAYLOADBYTES: 4194304
+      KIBANA_AUTOCOMPLETETIMEOUT: 3000
+      KIBANA_AUTOCOMPLETETERMINATEAFTER: 2500000
